@@ -4,23 +4,28 @@ import type { Database } from '@/types/database';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!url || !anonKey) {
-  throw new Error(
-    'VITE_SUPABASE_URL en VITE_SUPABASE_ANON_KEY ontbreken. Kopieer .env.example naar .env.',
-  );
-}
+/**
+ * Of de omgevingsvariabelen gezet zijn. Zonder deze twee kan het portaal niets,
+ * maar we gooien hier bewust geen fout: dat zou de hele pagina leeg laten.
+ * main.tsx toont in plaats daarvan een leesbare uitleg.
+ */
+export const isSupabaseConfigured = Boolean(url && anonKey);
 
 /**
- * The anon key ships in the public bundle by design. Every authorisation rule
- * lives in Row Level Security and the Storage policies, never here.
+ * De anon key staat publiek in de bundel, en dat mag: alle autorisatie wordt
+ * afgedwongen met Row Level Security en de Storage-policies, nooit hier.
  */
-export const supabase = createClient<Database>(url, anonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
+export const supabase = createClient<Database>(
+  url || 'https://niet-geconfigureerd.invalid',
+  anonKey || 'niet-geconfigureerd',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+    },
   },
-});
+);
 
 export type SupabaseClientType = typeof supabase;
