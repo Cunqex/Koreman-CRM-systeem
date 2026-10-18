@@ -329,6 +329,13 @@ $$;
 select koreman_test.logout();
 reset role;
 
+-- Stopt met een exception zodra er iets faalt (handig in CI).
 select koreman_test.report('rls');
+
+-- De Supabase SQL Editor toont geen NOTICE-regels, wel deze tabel.
+select ok, label, detail
+from koreman_test.results
+where suite = 'rls'
+order by seq;
 
 rollback;

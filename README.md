@@ -203,6 +203,11 @@ De tests draaien als SQL tegen de database en vereisen geen extra tooling.
 Draai ze tegen een **ontwikkeldatabase**, niet tegen productie. Elk bestand
 draait in één transactie en eindigt met `rollback`, dus er blijft niets staan.
 
+**Zonder psql:** plak in het Supabase-dashboard onder *SQL Editor* eerst de
+inhoud van `00_helpers.sql` en daarna die van het testbestand, en klik Run.
+Onderaan verschijnt een tabel met per test `ok`, `label` en `detail`. Faalt
+er iets, dan krijg je in plaats daarvan een foutmelding met het aantal.
+
 ```bash
 psql "$DATABASE_URL" -f supabase/tests/00_helpers.sql \
                      -f supabase/tests/01_rls_test.sql
