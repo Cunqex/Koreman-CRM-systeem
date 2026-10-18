@@ -28,6 +28,10 @@ export function ConfigMissing() {
           ))}
         </ul>
 
+        <p className="mt-2 text-xs text-navy-400">
+          Heet jouw sleutel VITE_SUPABASE_PUBLISHABLE_KEY? Die werkt ook.
+        </p>
+
         <div className="mt-5 space-y-2 text-sm text-navy-600">
           <p>
             <span className="font-semibold text-navy-800">Op GitHub Pages:</span>{' '}

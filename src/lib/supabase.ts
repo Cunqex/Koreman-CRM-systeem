@@ -2,7 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Supabase geeft nieuwe projecten een sleutel in het formaat sb_publishable_…
+// en noemt die in zijn eigen voorbeelden VITE_SUPABASE_PUBLISHABLE_KEY; oudere
+// projecten hebben de klassieke anon-JWT. Allebei werken, dus we accepteren
+// beide namen en hoeft niemand te puzzelen over welke het moet zijn.
+const anonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 /**
  * Of de omgevingsvariabelen gezet zijn. Zonder deze twee kan het portaal niets,
