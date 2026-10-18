@@ -383,6 +383,33 @@ export type CommissionSummaryView = {
   total_amount: number;
 };
 
+/**
+ * Eén rij uit calculate_commission(order_id). Gebruikt in de order-UI om live
+ * de korting en de geschatte commissie te tonen.
+ */
+export type CommissionCalculation = {
+  eligible: boolean;
+  /** Waarom er geen commissie is: architect_excluded, claim_not_with_agent,
+   *  no_contract of order_before_transfer. */
+  ineligible_reason: string | null;
+  advice_total: number;
+  sale_total: number;
+  discount: number;
+  tolerance: number;
+  discount_deduction: number;
+  pct: number;
+  commission: number;
+  contract_id: string | null;
+  contract_year: number | null;
+  /** Aan wie Koreman de commissie verschuldigd is (bij een subagent: de hoofdagent). */
+  payable_agent_id: string | null;
+  subagent_agent_id: string | null;
+  subagent_pct: number | null;
+  subagent_amount: number | null;
+  subagent_contract_id: string | null;
+  subagent_contract_year: number | null;
+};
+
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
@@ -436,20 +463,7 @@ export type Database = {
       };
       calculate_commission: {
         Args: { p_order_id: string };
-        Returns: {
-          advice_total: number;
-          sale_total: number;
-          discount: number;
-          tolerance: number;
-          discount_deduction: number;
-          pct: number;
-          commission: number;
-          subagent_pct: number | null;
-          subagent_amount: number | null;
-          contract_id: string | null;
-          contract_year: number | null;
-          payable_agent_id: string | null;
-        }[];
+        Returns: CommissionCalculation[];
       };
       find_duplicate_architects: {
         Args: {
