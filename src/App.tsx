@@ -6,6 +6,12 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Placeholder } from '@/pages/Placeholder';
 import { NotFound } from '@/pages/NotFound';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
+import { MfaPage } from '@/pages/auth/MfaPage';
+import { UsersPage } from '@/pages/admin/UsersPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,7 +24,6 @@ const queryClient = new QueryClient({
 });
 
 /** Routes still waiting for their feature phase. */
-const PHASE_3 = 'fase 3 (auth)';
 const PHASE_4 = 'fase 4 (architecten)';
 const PHASE_5 = 'fase 5 (activiteiten)';
 const PHASE_6 = 'fase 6 (orders en commissie)';
@@ -33,16 +38,10 @@ export default function App() {
           <SessionProvider>
             <Routes>
               {/* Public */}
-              <Route path="/login" element={<Placeholder titleKey="auth.signInTitle" phase={PHASE_3} />} />
-              <Route
-                path="/wachtwoord-vergeten"
-                element={<Placeholder titleKey="auth.forgotTitle" phase={PHASE_3} />}
-              />
-              <Route
-                path="/wachtwoord-herstellen"
-                element={<Placeholder titleKey="auth.resetTitle" phase={PHASE_3} />}
-              />
-              <Route path="/mfa" element={<Placeholder titleKey="auth.mfaTitle" phase={PHASE_3} />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/wachtwoord-vergeten" element={<ForgotPasswordPage />} />
+              <Route path="/wachtwoord-herstellen" element={<ResetPasswordPage />} />
+              <Route path="/mfa" element={<MfaPage />} />
 
               {/* Everything below requires a session (and aal2 for admins). */}
               <Route
@@ -131,7 +130,7 @@ export default function App() {
                   path="gebruikers"
                   element={
                     <RoleGate allow={['admin']}>
-                      <Placeholder titleKey="users.title" phase={PHASE_3} />
+                      <UsersPage />
                     </RoleGate>
                   }
                 />
@@ -145,7 +144,7 @@ export default function App() {
                 />
 
                 <Route path="meldingen" element={<Placeholder titleKey="notifications.title" phase={PHASE_8} />} />
-                <Route path="profiel" element={<Placeholder titleKey="nav.profile" phase={PHASE_3} />} />
+                <Route path="profiel" element={<ProfilePage />} />
 
                 <Route path="*" element={<NotFound />} />
               </Route>
