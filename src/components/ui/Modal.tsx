@@ -68,6 +68,7 @@ export function Modal({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="modal-title"
         tabIndex={-1}
         className={cn(
           'relative z-10 max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-pop animate-fade-in sm:rounded-2xl',
@@ -76,7 +77,9 @@ export function Modal({
       >
         <header className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-navy-900">{title}</h2>
+            <h2 id="modal-title" className="text-base font-semibold text-navy-900">
+              {title}
+            </h2>
             {description ? (
               <p className="mt-0.5 text-sm text-navy-400">{description}</p>
             ) : null}

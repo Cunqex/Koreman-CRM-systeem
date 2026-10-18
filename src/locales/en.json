@@ -56,7 +56,8 @@
     "date": "Date",
     "status": "Status",
     "actions": "Actions",
-    "total": "Total"
+    "total": "Total",
+    "skipToContent": "Skip to content"
   },
   "nav": {
     "groupMain": "Main menu",

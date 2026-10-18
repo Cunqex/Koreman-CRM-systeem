@@ -31,6 +31,12 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-canvas">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-navy-900 focus:shadow-pop"
+      >
+        {t('common.skipToContent')}
+      </a>
       <Sidebar
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -38,7 +44,7 @@ export function AppLayout() {
       />
       <div className="lg:pl-[17rem]">
         <Topbar onOpenMenu={() => setMenuOpen(true)} />
-        <main className="px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-6">
+        <main id="main" className="px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-6">
           <Outlet />
         </main>
       </div>

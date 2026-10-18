@@ -29,9 +29,10 @@ export function Sidebar({ open, onClose, hasSubagents }: SidebarProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col bg-navy-950 text-white transition-transform lg:translate-x-0',
-          open ? 'translate-x-0' : '-translate-x-full',
+          'fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col bg-navy-950 text-white transition-transform lg:visible lg:translate-x-0',
+          open ? 'translate-x-0' : 'invisible -translate-x-full',
         )}
+        aria-label={t('nav.groupMain')}
       >
         <div className="flex items-center justify-between px-6 py-6">
           <div>

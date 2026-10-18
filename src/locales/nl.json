@@ -56,7 +56,8 @@
     "date": "Datum",
     "status": "Status",
     "actions": "Acties",
-    "total": "Totaal"
+    "total": "Totaal",
+    "skipToContent": "Naar de inhoud"
   },
   "nav": {
     "groupMain": "Hoofdmenu",

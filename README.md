@@ -43,6 +43,11 @@ Twee dingen om te weten:
 - **`last_activity_at` en `in_region` zijn niet schrijfbaar voor clients.** Dat
   is een rechtenbeperking op kolomniveau, geen trigger: zo kan een agent geen
   recente activiteit faken om een inactiviteitsmelding te ontlopen.
+- **Twee private Storage-buckets**, allebei door de migraties aangemaakt.
+  `documents` gebruikt het pad `<architect_id>/…` en volgt de zichtbaarheid
+  van de architect; `contracts` gebruikt `<agent_id>/…`, is leesbaar volgens
+  `visible_agent_ids()` en alleen door Koreman te vullen. Beide 20 MB per
+  bestand.
 
 ---
 
@@ -186,6 +191,10 @@ npm run dev
 | `npm run typecheck` | TypeScript over het hele project |
 | `npm run preview` | de productiebuild lokaal bekijken |
 
+De pagina's worden per route apart geladen, dus Recharts en de zwaardere
+overzichten zitten niet in de eerste download. Het inlogscherm laadt
+daardoor een fractie van de bundel.
+
 ---
 
 ## Tests
@@ -218,6 +227,18 @@ korting binnen en boven de speling, een overgedragen architect vóór en ná
 `transferred_at`, een uitgesloten architect, de subagent-verdeling (12,5% naar
 de hoofdagent, 9% doorgegeven) inclusief het evenredige deel van de
 kortingsaftrek, en de verrekening bij retour na betaling.
+
+### Wat wel en niet is nagelopen
+
+Het inlogscherm, de wachtwoord-herstelpagina, de taalwissel NL/EN en de
+weergave op mobiel (375 px) zijn in een browser bekeken en werken, zonder
+fouten in de console. Typecheck en productiebuild draaien schoon.
+
+De schermen áchter de login zijn nog niet in een browser gezien: daarvoor is
+een echt Supabase-project met een ingelogde gebruiker nodig. **De SQL in
+`supabase/migrations/` is nog nooit tegen een database uitgevoerd.** Draai
+daarom eerst `supabase db push` en daarna de twee testbestanden hieronder;
+reken op kinderziektes bij die eerste run.
 
 ### Demo-data
 

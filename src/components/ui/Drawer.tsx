@@ -45,6 +45,7 @@ export function Drawer({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="drawer-title"
         tabIndex={-1}
         className={cn(
           'absolute right-0 top-0 flex h-full w-full flex-col bg-white shadow-pop animate-slide-in-right',
@@ -53,7 +54,9 @@ export function Drawer({
       >
         <header className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-navy-900">{title}</h2>
+            <h2 id="drawer-title" className="text-base font-semibold text-navy-900">
+              {title}
+            </h2>
             {description ? (
               <p className="mt-0.5 text-sm text-navy-400">{description}</p>
             ) : null}

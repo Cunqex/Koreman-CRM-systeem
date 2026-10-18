@@ -36,6 +36,8 @@ type DataTableProps<T> = {
   selected?: string[];
   onSelectedChange?: (keys: string[]) => void;
   initialSort?: { key: string; dir: 'asc' | 'desc' };
+  /** Toegankelijke naam van de tabel voor schermlezers. */
+  label?: string;
   className?: string;
 };
 
@@ -55,6 +57,7 @@ export function DataTable<T>({
   selected = [],
   onSelectedChange,
   initialSort,
+  label,
   className,
 }: DataTableProps<T>) {
   const { t } = useTranslation();
@@ -143,7 +146,10 @@ export function DataTable<T>({
   return (
     <div className={className}>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[40rem] border-collapse text-sm">
+        <table
+          aria-label={label ?? emptyTitle}
+          className="w-full min-w-[40rem] border-collapse text-sm"
+        >
           <thead>
             <tr className="border-b border-line">
               {selectable ? (
