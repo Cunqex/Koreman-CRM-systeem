@@ -22,6 +22,9 @@ import { OrderFormPage } from '@/pages/orders/OrderFormPage';
 import { OrderDetailPage } from '@/pages/orders/OrderDetailPage';
 import { CommissionPage } from '@/pages/commission/CommissionPage';
 import { CollectionsPage } from '@/pages/admin/CollectionsPage';
+import { ContractsPage } from '@/pages/admin/ContractsPage';
+import { ContractEditorPage } from '@/pages/admin/ContractEditorPage';
+import { MyContractPage } from '@/pages/contracts/MyContractPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,7 +37,6 @@ const queryClient = new QueryClient({
 });
 
 /** Routes still waiting for their feature phase. */
-const PHASE_7 = 'fase 7 (contracten en claims)';
 const PHASE_8 = 'fase 8 (dashboards en rapporten)';
 
 export default function App() {
@@ -97,7 +99,15 @@ export default function App() {
                   path="contracten"
                   element={
                     <RoleGate allow={['admin']}>
-                      <Placeholder titleKey="contract.other" phase={PHASE_7} />
+                      <ContractsPage />
+                    </RoleGate>
+                  }
+                />
+                <Route
+                  path="contracten/:contractId"
+                  element={
+                    <RoleGate allow={['admin']}>
+                      <ContractEditorPage />
                     </RoleGate>
                   }
                 />
@@ -105,7 +115,7 @@ export default function App() {
                   path="mijn-contract"
                   element={
                     <RoleGate allow={['agent', 'subagent']}>
-                      <Placeholder titleKey="nav.myContract" phase={PHASE_7} />
+                      <MyContractPage />
                     </RoleGate>
                   }
                 />
