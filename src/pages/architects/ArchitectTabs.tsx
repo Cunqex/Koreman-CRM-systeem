@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, FileText, Plus, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { ActivityDialog } from '@/features/activities/ActivityDialog';
 import { useSession } from '@/features/auth/SessionProvider';
 import {
   useAgreement,
@@ -47,9 +48,16 @@ const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 /* -------------------------------------------------------------------------
  * Tijdlijn: activiteiten en orders chronologisch door elkaar
  * ---------------------------------------------------------------------- */
-export function TimelineTab({ architectId }: { architectId: string }) {
+export function TimelineTab({
+  architectId,
+  canEdit,
+}: {
+  architectId: string;
+  canEdit: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const lang = (i18n.resolvedLanguage ?? 'nl') as AppLanguage;
+  const [addOpen, setAddOpen] = useState(false);
   const { data: activities = [], isLoading } = useArchitectActivities(architectId);
   const { data: orders = [] } = useArchitectOrders(architectId);
   const { data: profiles = [] } = useProfiles();
@@ -98,9 +106,35 @@ export function TimelineTab({ architectId }: { architectId: string }) {
     );
   }, [activities, orders, nameById, t, lang]);
 
-  if (isLoading) return <CardBody>{t('common.loading')}</CardBody>;
+  return (
+    <>
+      <CardHeader
+        title={t('activity.other')}
+        action={
+          canEdit ? (
+            <Button
+              size="sm"
+              icon={<Plus className="h-4 w-4" />}
+              onClick={() => setAddOpen(true)}
+            >
+              {t('activity.addTitle')}
+            </Button>
+          ) : null
+        }
+      />
+      {isLoading ? (
+        <CardBody>{t('common.loading')}</CardBody>
+      ) : (
+        <Timeline entries={entries} emptyTitle={t('common.emptyTimeline')} />
+      )}
 
-  return <Timeline entries={entries} emptyTitle={t('common.emptyTimeline')} />;
+      <ActivityDialog
+        open={addOpen}
+        architectId={architectId}
+        onClose={() => setAddOpen(false)}
+      />
+    </>
+  );
 }
 
 /* -------------------------------------------------------------------------

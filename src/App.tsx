@@ -16,6 +16,7 @@ import { ArchitectsPage } from '@/pages/architects/ArchitectsPage';
 import { NewArchitectPage } from '@/pages/architects/NewArchitectPage';
 import { ArchitectDetailPage } from '@/pages/architects/ArchitectDetailPage';
 import { ProjectsPage } from '@/pages/projects/ProjectsPage';
+import { ActivitiesPage } from '@/pages/activities/ActivitiesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,7 +29,6 @@ const queryClient = new QueryClient({
 });
 
 /** Routes still waiting for their feature phase. */
-const PHASE_5 = 'fase 5 (activiteiten)';
 const PHASE_6 = 'fase 6 (orders en commissie)';
 const PHASE_7 = 'fase 7 (contracten en claims)';
 const PHASE_8 = 'fase 8 (dashboards en rapporten)';
@@ -77,7 +77,7 @@ export default function App() {
                 <Route path="architecten/nieuw" element={<NewArchitectPage />} />
                 <Route path="architecten/:architectId" element={<ArchitectDetailPage />} />
 
-                <Route path="activiteiten" element={<Placeholder titleKey="activity.other" phase={PHASE_5} />} />
+                <Route path="activiteiten" element={<ActivitiesPage />} />
 
                 <Route path="projecten" element={<ProjectsPage />} />
                 <Route path="projecten/:projectId" element={<ProjectsPage />} />

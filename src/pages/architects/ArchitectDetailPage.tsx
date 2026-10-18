@@ -300,7 +300,9 @@ export function ArchitectDetailPage() {
       <Tabs items={tabs} active={tab} onChange={setTab} className="mb-4" />
 
       <Card>
-        {tab === 'timeline' ? <TimelineTab architectId={architect.id} /> : null}
+        {tab === 'timeline' ? (
+          <TimelineTab architectId={architect.id} canEdit={canEdit} />
+        ) : null}
         {tab === 'agreements' ? (
           <AgreementsTab architectId={architect.id} canEdit={canEdit} />
         ) : null}
