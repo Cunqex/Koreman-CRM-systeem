@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 // GitHub Pages serves the app from /<repo-name>/. Override via VITE_BASE_PATH
 // (a GitHub Actions variable) when the repo name differs, or set it to '/' once
 // a custom domain such as portaal.koremanmaastricht.nl is attached.
-const base = process.env.VITE_BASE_PATH ?? '/koreman-agentenportaal/';
+const base = process.env.VITE_BASE_PATH ?? '/Koreman-CRM-systeem/';
 
 export default defineConfig({
   base,
