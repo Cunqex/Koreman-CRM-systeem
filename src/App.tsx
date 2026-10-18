@@ -12,6 +12,10 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { MfaPage } from '@/pages/auth/MfaPage';
 import { UsersPage } from '@/pages/admin/UsersPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { ArchitectsPage } from '@/pages/architects/ArchitectsPage';
+import { NewArchitectPage } from '@/pages/architects/NewArchitectPage';
+import { ArchitectDetailPage } from '@/pages/architects/ArchitectDetailPage';
+import { ProjectsPage } from '@/pages/projects/ProjectsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,7 +28,6 @@ const queryClient = new QueryClient({
 });
 
 /** Routes still waiting for their feature phase. */
-const PHASE_4 = 'fase 4 (architecten)';
 const PHASE_5 = 'fase 5 (activiteiten)';
 const PHASE_6 = 'fase 6 (orders en commissie)';
 const PHASE_7 = 'fase 7 (contracten en claims)';
@@ -70,14 +73,14 @@ export default function App() {
                   }
                 />
 
-                <Route path="architecten" element={<Placeholder titleKey="architect.other" phase={PHASE_4} />} />
-                <Route path="architecten/nieuw" element={<Placeholder titleKey="architect.newTitle" phase={PHASE_4} />} />
-                <Route path="architecten/:architectId" element={<Placeholder titleKey="architect.one" phase={PHASE_4} />} />
+                <Route path="architecten" element={<ArchitectsPage />} />
+                <Route path="architecten/nieuw" element={<NewArchitectPage />} />
+                <Route path="architecten/:architectId" element={<ArchitectDetailPage />} />
 
                 <Route path="activiteiten" element={<Placeholder titleKey="activity.other" phase={PHASE_5} />} />
 
-                <Route path="projecten" element={<Placeholder titleKey="project.other" phase={PHASE_4} />} />
-                <Route path="projecten/:projectId" element={<Placeholder titleKey="project.one" phase={PHASE_4} />} />
+                <Route path="projecten" element={<ProjectsPage />} />
+                <Route path="projecten/:projectId" element={<ProjectsPage />} />
 
                 <Route path="orders" element={<Placeholder titleKey="order.other" phase={PHASE_6} />} />
                 <Route path="orders/nieuw" element={<Placeholder titleKey="order.newTitle" phase={PHASE_6} />} />
