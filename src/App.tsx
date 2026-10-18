@@ -4,7 +4,6 @@ import { SessionProvider } from '@/features/auth/SessionProvider';
 import { ProtectedRoute, RoleGate } from '@/features/auth/ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Placeholder } from '@/pages/Placeholder';
 import { NotFound } from '@/pages/NotFound';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
@@ -25,6 +24,13 @@ import { CollectionsPage } from '@/pages/admin/CollectionsPage';
 import { ContractsPage } from '@/pages/admin/ContractsPage';
 import { ContractEditorPage } from '@/pages/admin/ContractEditorPage';
 import { MyContractPage } from '@/pages/contracts/MyContractPage';
+import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { AgentsPage } from '@/pages/admin/AgentsPage';
+import { AgentDetailPage } from '@/pages/admin/AgentDetailPage';
+import { PerformancePage } from '@/pages/admin/PerformancePage';
+import { AuditLogPage } from '@/pages/admin/AuditLogPage';
+import { NotificationsPage } from '@/pages/NotificationsPage';
+import { SubagentsPage } from '@/pages/SubagentsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,7 +43,6 @@ const queryClient = new QueryClient({
 });
 
 /** Routes still waiting for their feature phase. */
-const PHASE_8 = 'fase 8 (dashboards en rapporten)';
 
 export default function App() {
   return (
@@ -60,13 +65,13 @@ export default function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<Placeholder titleKey="dashboard.title" phase={PHASE_8} />} />
+                <Route index element={<DashboardPage />} />
 
                 <Route
                   path="agenten"
                   element={
                     <RoleGate allow={['admin']}>
-                      <Placeholder titleKey="nav.agents" phase={PHASE_8} />
+                      <AgentsPage />
                     </RoleGate>
                   }
                 />
@@ -74,7 +79,7 @@ export default function App() {
                   path="agenten/:agentId"
                   element={
                     <RoleGate allow={['admin']}>
-                      <Placeholder titleKey="nav.agents" phase={PHASE_8} />
+                      <AgentDetailPage />
                     </RoleGate>
                   }
                 />
@@ -123,7 +128,7 @@ export default function App() {
                   path="subagenten"
                   element={
                     <RoleGate allow={['agent']}>
-                      <Placeholder titleKey="nav.subagents" phase={PHASE_8} />
+                      <SubagentsPage />
                     </RoleGate>
                   }
                 />
@@ -132,7 +137,7 @@ export default function App() {
                   path="prestaties"
                   element={
                     <RoleGate allow={['admin']}>
-                      <Placeholder titleKey="performance.title" phase={PHASE_8} />
+                      <PerformancePage />
                     </RoleGate>
                   }
                 />
@@ -156,12 +161,12 @@ export default function App() {
                   path="audit-log"
                   element={
                     <RoleGate allow={['admin']}>
-                      <Placeholder titleKey="audit.title" phase={PHASE_8} />
+                      <AuditLogPage />
                     </RoleGate>
                   }
                 />
 
-                <Route path="meldingen" element={<Placeholder titleKey="notifications.title" phase={PHASE_8} />} />
+                <Route path="meldingen" element={<NotificationsPage />} />
                 <Route path="profiel" element={<ProfilePage />} />
 
                 <Route path="*" element={<NotFound />} />
