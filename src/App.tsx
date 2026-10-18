@@ -17,6 +17,11 @@ import { NewArchitectPage } from '@/pages/architects/NewArchitectPage';
 import { ArchitectDetailPage } from '@/pages/architects/ArchitectDetailPage';
 import { ProjectsPage } from '@/pages/projects/ProjectsPage';
 import { ActivitiesPage } from '@/pages/activities/ActivitiesPage';
+import { OrdersPage } from '@/pages/orders/OrdersPage';
+import { OrderFormPage } from '@/pages/orders/OrderFormPage';
+import { OrderDetailPage } from '@/pages/orders/OrderDetailPage';
+import { CommissionPage } from '@/pages/commission/CommissionPage';
+import { CollectionsPage } from '@/pages/admin/CollectionsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,7 +34,6 @@ const queryClient = new QueryClient({
 });
 
 /** Routes still waiting for their feature phase. */
-const PHASE_6 = 'fase 6 (orders en commissie)';
 const PHASE_7 = 'fase 7 (contracten en claims)';
 const PHASE_8 = 'fase 8 (dashboards en rapporten)';
 
@@ -82,11 +86,12 @@ export default function App() {
                 <Route path="projecten" element={<ProjectsPage />} />
                 <Route path="projecten/:projectId" element={<ProjectsPage />} />
 
-                <Route path="orders" element={<Placeholder titleKey="order.other" phase={PHASE_6} />} />
-                <Route path="orders/nieuw" element={<Placeholder titleKey="order.newTitle" phase={PHASE_6} />} />
-                <Route path="orders/:orderId" element={<Placeholder titleKey="order.one" phase={PHASE_6} />} />
+                <Route path="orders" element={<OrdersPage />} />
+                <Route path="orders/nieuw" element={<OrderFormPage />} />
+                <Route path="orders/:orderId/bewerken" element={<OrderFormPage />} />
+                <Route path="orders/:orderId" element={<OrderDetailPage />} />
 
-                <Route path="commissie" element={<Placeholder titleKey="commission.ledger" phase={PHASE_6} />} />
+                <Route path="commissie" element={<CommissionPage />} />
 
                 <Route
                   path="contracten"
@@ -125,7 +130,7 @@ export default function App() {
                   path="collecties"
                   element={
                     <RoleGate allow={['admin']}>
-                      <Placeholder titleKey="collection.other" phase={PHASE_6} />
+                      <CollectionsPage />
                     </RoleGate>
                   }
                 />

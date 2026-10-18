@@ -244,7 +244,8 @@
     "submit": "Submit order",
     "newTitle": "Register order",
     "approvedBy": "Approved by",
-    "paidAt": "Paid on"
+    "paidAt": "Paid on",
+    "estimateHint": "The database makes the final calculation on approval and payment."
   },
   "orderStatus": {
     "ingediend": "Submitted",
