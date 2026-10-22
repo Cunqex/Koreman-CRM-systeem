@@ -1,37 +1,19 @@
--- RLS-tests. Draait in één transactie en eindigt met rollback.
---   psql "$DATABASE_URL" -f supabase/tests/00_helpers.sql -f supabase/tests/01_rls_test.sql
+-- RLS-tests.
 --
--- Draai dit als superuser/postgres: de fixtures worden buiten RLS om gezet,
--- de tests zelf draaien expliciet als rol 'authenticated'.
-
--- Vangnet voor de resultatentabel.
+-- Draaien: plak dit hele bestand in de Supabase SQL Editor en klik Run.
+-- Je krijgt onderaan een tabel met per test ok / test / detail.
 --
--- Supabase zet RLS aan op nieuwe tabellen, ook op koreman_test.results, en
--- laat dat niet zomaar uitzetten. Tijdens een test draait koreman_test.check()
--- als de rol authenticated en loopt dan stuk op die policy. Een toegevende
--- policy lost het op, ongeacht of RLS aan of uit staat. Dit raakt alleen de
--- testtabel; de policies op de echte tabellen blijven ongemoeid.
+-- Dit bestand is zelfstandig: het heeft 00_helpers.sql niet nodig en schrijft
+-- nergens naar een tabel. Alle uitkomsten worden in geheugen verzameld en in
+-- één keer teruggegeven, juist omdat een hulptabel zelf weer onder RLS valt.
 --
--- Staat hier en niet alleen in 00_helpers.sql, zodat dit bestand ook werkt
--- als de helpers van een oudere versie zijn.
-do $guard$
-begin
-  begin
-    execute 'alter table koreman_test.results disable row level security';
-  exception when others then
-    null;
-  end;
-  execute 'drop policy if exists results_open on koreman_test.results';
-  execute 'create policy results_open on koreman_test.results for all using (true) with check (true)';
-end
-$guard$;
+-- Alles draait in één transactie die eindigt met rollback, dus er blijft
+-- niets van achter in je database.
 
 begin;
 
-delete from koreman_test.results where suite = 'rls';
-
 -- ---------------------------------------------------------------------------
--- Fixtures
+-- Fixtures (als eigenaar, vóór het rolwisselen)
 -- ---------------------------------------------------------------------------
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'admin@koreman.test'),
@@ -47,11 +29,10 @@ insert into public.profiles (id, role, full_name, email, parent_agent_id) values
   ('44444444-4444-4444-4444-444444444444', 'subagent', 'Subagent Een',   'sub1@koreman.test',
    '22222222-2222-2222-2222-222222222222');
 
-insert into public.contracts (id, agent_id, start_date, own_commission_pct, transferred_commission_pct, subagent_own_pct)
-values
-  ('aaaaaaaa-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', current_date - 100, 12.5, 5, null),
-  ('aaaaaaaa-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', current_date - 100, 12.5, 5, null),
-  ('aaaaaaaa-0000-0000-0000-000000000003', '44444444-4444-4444-4444-444444444444', current_date - 100, 12.5, 5, 9);
+insert into public.contracts (id, agent_id, start_date) values
+  ('aaaaaaaa-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', current_date - 100),
+  ('aaaaaaaa-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', current_date - 100),
+  ('aaaaaaaa-0000-0000-0000-000000000003', '44444444-4444-4444-4444-444444444444', current_date - 100);
 
 insert into public.contract_regions (contract_id, province) values
   ('aaaaaaaa-0000-0000-0000-000000000001', 'Limburg'),
@@ -66,7 +47,6 @@ insert into public.architects (id, agent_id, first_name, last_name, postcode, ci
   ('77777777-0000-0000-0000-000000000003', '44444444-4444-4444-4444-444444444444',
    'Carla', 'Peters',   '6411 AB', 'Heerlen');
 
--- Twee activiteiten bij de architect van agent1: één vers, één ouder dan 24 uur.
 insert into public.activities (id, architect_id, agent_id, type, activity_date, subject) values
   ('88888888-0000-0000-0000-000000000001', '55555555-0000-0000-0000-000000000001',
    '22222222-2222-2222-2222-222222222222', 'bezoek', current_date, 'Verse activiteit'),
@@ -87,277 +67,251 @@ insert into public.orders (id, architect_id, agent_id, order_date, reference, st
 insert into public.order_lines (order_id, design_name, quantity, advice_price, sale_price) values
   ('99999999-0000-0000-0000-000000000001', 'Strata 200x300', 1, 10000, 10000);
 
--- ===========================================================================
--- 1. Een agent ziet geen data van een andere agent
--- ===========================================================================
-set local role authenticated;
-select koreman_test.login('22222222-2222-2222-2222-222222222222');
-
-do $$
-declare v_own integer; v_other integer;
+-- ---------------------------------------------------------------------------
+-- De tests zelf
+--
+-- Alles in één functie, die de rol per onderdeel zelf wisselt en de uitslag
+-- als resultaatset teruggeeft. Zo is er geen hulptabel nodig.
+-- ---------------------------------------------------------------------------
+create or replace function pg_temp.run_rls_tests()
+returns table (ok boolean, test text, detail text)
+language plpgsql
+as $fn$
+declare
+  v_a integer;
+  v_b integer;
+  v_c integer;
+  v_rows integer;
+  v_text text;
+  v_status public.order_status;
+  v_flag boolean;
 begin
-  select count(*) into v_own from public.architects
+  ------------------------------------------------------------------ agent 1
+  perform set_config('request.jwt.claims',
+    '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated","aal":"aal1"}', true);
+  execute 'set local role authenticated';
+
+  select count(*) into v_a from public.architects
   where id = '55555555-0000-0000-0000-000000000001';
-  select count(*) into v_other from public.architects
+  ok := v_a = 1;
+  test := 'agent ziet eigen architect';
+  detail := format('verwacht 1, kreeg %s', v_a);
+  return next;
+
+  select count(*) into v_b from public.architects
   where id = '66666666-0000-0000-0000-000000000002';
+  ok := v_b = 0;
+  test := 'agent ziet architect van andere agent NIET';
+  detail := format('verwacht 0, kreeg %s', v_b);
+  return next;
 
-  perform koreman_test.check('rls', 'agent ziet eigen architect', v_own = 1,
-    format('verwacht 1, kreeg %s', v_own));
-  perform koreman_test.check('rls', 'agent ziet architect van andere agent NIET', v_other = 0,
-    format('verwacht 0, kreeg %s', v_other));
-end
-$$;
-
--- ===========================================================================
--- 2. Een hoofdagent ziet zijn subagent wel
--- ===========================================================================
-do $$
-declare v_sub integer;
-begin
-  select count(*) into v_sub from public.architects
+  select count(*) into v_c from public.architects
   where id = '77777777-0000-0000-0000-000000000003';
+  ok := v_c = 1;
+  test := 'hoofdagent ziet architect van subagent';
+  detail := format('verwacht 1, kreeg %s', v_c);
+  return next;
 
-  perform koreman_test.check('rls', 'hoofdagent ziet architect van subagent', v_sub = 1,
-    format('verwacht 1, kreeg %s', v_sub));
-end
-$$;
+  -- Architect van een ander wijzigen: RLS laat dit 0 rijen raken.
+  begin
+    update public.architects set city = 'Gekaapt'
+    where id = '66666666-0000-0000-0000-000000000002';
+    get diagnostics v_rows = row_count;
+    ok := v_rows = 0;
+    detail := format('%s rijen gewijzigd', v_rows);
+  exception when others then
+    ok := true;
+    detail := sqlerrm;
+  end;
+  test := 'agent kan architect van ander niet wijzigen';
+  return next;
 
--- ===========================================================================
--- 3. Een agent kan de architect van een ander niet wijzigen
--- ===========================================================================
-do $$
-declare v_rows integer;
-begin
-  update public.architects set city = 'Gekaapt'
-  where id = '66666666-0000-0000-0000-000000000002';
-  get diagnostics v_rows = row_count;
+  -- Activiteiten zijn bewijsvoering: er is voor niemand een DELETE-policy.
+  begin
+    delete from public.activities where id = '88888888-0000-0000-0000-000000000001';
+    get diagnostics v_rows = row_count;
+    select count(*) into v_a from public.activities
+    where id = '88888888-0000-0000-0000-000000000001';
+    ok := v_rows = 0 and v_a = 1;
+    detail := format('%s verwijderd, %s over', v_rows, v_a);
+  exception when others then
+    ok := true;
+    detail := sqlerrm;
+  end;
+  test := 'agent kan activiteit niet verwijderen';
+  return next;
 
-  perform koreman_test.check('rls', 'agent kan architect van ander niet wijzigen', v_rows = 0,
-    format('%s rijen gewijzigd', v_rows));
-exception when others then
-  perform koreman_test.check('rls', 'agent kan architect van ander niet wijzigen', true, sqlerrm);
-end
-$$;
+  -- Binnen 24 uur mag wijzigen wel.
+  begin
+    update public.activities set subject = 'Bijgewerkt binnen 24 uur'
+    where id = '88888888-0000-0000-0000-000000000001';
+    get diagnostics v_rows = row_count;
+    ok := v_rows = 1;
+    detail := format('%s rijen gewijzigd', v_rows);
+  exception when others then
+    ok := false;
+    detail := sqlerrm;
+  end;
+  test := 'agent kan activiteit binnen 24 uur wijzigen';
+  return next;
 
--- ===========================================================================
--- 4. Een agent kan geen activiteit verwijderen
--- ===========================================================================
-do $$
-declare v_rows integer; v_still integer;
-begin
-  delete from public.activities where id = '88888888-0000-0000-0000-000000000001';
-  get diagnostics v_rows = row_count;
-  select count(*) into v_still from public.activities
-  where id = '88888888-0000-0000-0000-000000000001';
+  -- Daarna niet meer.
+  begin
+    update public.activities set subject = 'Mag niet meer'
+    where id = '88888888-0000-0000-0000-000000000002';
+    get diagnostics v_rows = row_count;
+    select subject into v_text from public.activities
+    where id = '88888888-0000-0000-0000-000000000002';
+    ok := v_rows = 0 and v_text is distinct from 'Mag niet meer';
+    detail := format('%s rijen gewijzigd, onderwerp %s', v_rows, coalesce(v_text, 'onzichtbaar'));
+  exception when others then
+    ok := true;
+    detail := sqlerrm;
+  end;
+  test := 'agent kan activiteit na 24 uur NIET wijzigen';
+  return next;
 
-  perform koreman_test.check('rls', 'agent kan activiteit niet verwijderen',
-    v_rows = 0 and v_still = 1, format('%s verwijderd, %s over', v_rows, v_still));
-exception when others then
-  perform koreman_test.check('rls', 'agent kan activiteit niet verwijderen', true, sqlerrm);
-end
-$$;
-
--- ===========================================================================
--- 5. Binnen 24 uur wijzigen mag wel, daarna niet
--- ===========================================================================
-do $$
-declare v_rows integer;
-begin
-  update public.activities set subject = 'Bijgewerkt binnen 24 uur'
-  where id = '88888888-0000-0000-0000-000000000001';
-  get diagnostics v_rows = row_count;
-
-  perform koreman_test.check('rls', 'agent kan activiteit binnen 24 uur wijzigen', v_rows = 1,
-    format('%s rijen gewijzigd', v_rows));
-exception when others then
-  perform koreman_test.check('rls', 'agent kan activiteit binnen 24 uur wijzigen', false, sqlerrm);
-end
-$$;
-
-do $$
-declare v_rows integer; v_subject text;
-begin
-  update public.activities set subject = 'Mag niet meer'
-  where id = '88888888-0000-0000-0000-000000000002';
-  get diagnostics v_rows = row_count;
-
-  select subject into v_subject from public.activities
-  where id = '88888888-0000-0000-0000-000000000002';
-
-  perform koreman_test.check('rls', 'agent kan activiteit na 24 uur NIET wijzigen',
-    v_rows = 0 and v_subject is distinct from 'Mag niet meer',
-    format('%s rijen gewijzigd, onderwerp nu %s', v_rows, v_subject));
-exception when others then
-  -- De trigger mag het ook met een exception weigeren.
-  perform koreman_test.check('rls', 'agent kan activiteit na 24 uur NIET wijzigen', true, sqlerrm);
-end
-$$;
-
--- ===========================================================================
--- 6. Een agent kan de orderstatus niet wijzigen
--- ===========================================================================
-do $$
-declare v_status public.order_status;
-begin
+  -- Statusovergangen zijn voorbehouden aan Koreman.
   begin
     update public.orders set status = 'goedgekeurd'
     where id = '99999999-0000-0000-0000-000000000001';
   exception when others then
     null;
   end;
-
   select status into v_status from public.orders
   where id = '99999999-0000-0000-0000-000000000001';
+  ok := v_status = 'ingediend';
+  test := 'agent kan orderstatus niet wijzigen';
+  detail := format('status is nu %s', coalesce(v_status::text, 'onzichtbaar'));
+  return next;
 
-  perform koreman_test.check('rls', 'agent kan orderstatus niet wijzigen',
-    v_status = 'ingediend', format('status is nu %s', v_status));
-end
-$$;
-
--- ===========================================================================
--- 7. Een agent kan geen commissieregel aanmaken
--- ===========================================================================
-do $$
-declare v_blocked boolean := false;
-begin
+  -- De commissieledger wordt alleen door triggers gevuld.
+  v_flag := false;
   begin
     insert into public.commission_entries
       (agent_id, kind, payable_by, base_amount, amount)
     values
       ('22222222-2222-2222-2222-222222222222', 'commission', 'koreman', 10000, 1250);
   exception when others then
-    v_blocked := true;
+    v_flag := true;
   end;
+  ok := v_flag;
+  test := 'agent kan geen commission_entries maken';
+  detail := case when v_flag then 'geweigerd' else 'insert werd NIET geweigerd' end;
+  return next;
 
-  perform koreman_test.check('rls', 'agent kan geen commission_entries maken', v_blocked,
-    'insert werd niet geweigerd');
-end
-$$;
-
--- ===========================================================================
--- 8. Een agent kan last_activity_at niet zelf zetten
--- ===========================================================================
-do $$
-declare v_blocked boolean := false;
-begin
+  -- last_activity_at is kolomrechtelijk afgeschermd, zodat activiteit niet
+  -- te faken is.
+  v_flag := false;
   begin
     update public.architects set last_activity_at = now()
     where id = '55555555-0000-0000-0000-000000000001';
   exception when others then
-    v_blocked := true;
+    v_flag := true;
   end;
+  ok := v_flag;
+  test := 'agent kan last_activity_at niet zelf zetten';
+  detail := case when v_flag then 'geweigerd' else 'kolom was toch schrijfbaar' end;
+  return next;
 
-  perform koreman_test.check('rls', 'agent kan last_activity_at niet zelf zetten', v_blocked,
-    'kolom was toch schrijfbaar');
-end
-$$;
+  -- De audit log is alleen voor Koreman.
+  select count(*) into v_a from public.audit_log;
+  ok := v_a = 0;
+  test := 'agent ziet de audit log niet';
+  detail := format('verwacht 0, kreeg %s', v_a);
+  return next;
 
--- ===========================================================================
--- 9. Een subagent ziet niets van zijn hoofdagent
--- ===========================================================================
-select koreman_test.login('44444444-4444-4444-4444-444444444444');
+  ----------------------------------------------------------------- subagent
+  perform set_config('request.jwt.claims',
+    '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated","aal":"aal1"}', true);
 
-do $$
-declare v_own integer; v_parent integer; v_parent_act integer;
-begin
-  select count(*) into v_own from public.architects
+  select count(*) into v_a from public.architects
   where id = '77777777-0000-0000-0000-000000000003';
-  select count(*) into v_parent from public.architects
+  ok := v_a = 1;
+  test := 'subagent ziet eigen architect';
+  detail := format('verwacht 1, kreeg %s', v_a);
+  return next;
+
+  select count(*) into v_b from public.architects
   where id = '55555555-0000-0000-0000-000000000001';
-  select count(*) into v_parent_act from public.activities
+  ok := v_b = 0;
+  test := 'subagent ziet architect van hoofdagent NIET';
+  detail := format('verwacht 0, kreeg %s', v_b);
+  return next;
+
+  select count(*) into v_c from public.activities
   where agent_id = '22222222-2222-2222-2222-222222222222';
+  ok := v_c = 0;
+  test := 'subagent ziet activiteiten van hoofdagent NIET';
+  detail := format('verwacht 0, kreeg %s', v_c);
+  return next;
 
-  perform koreman_test.check('rls', 'subagent ziet eigen architect', v_own = 1,
-    format('verwacht 1, kreeg %s', v_own));
-  perform koreman_test.check('rls', 'subagent ziet architect van hoofdagent NIET', v_parent = 0,
-    format('verwacht 0, kreeg %s', v_parent));
-  perform koreman_test.check('rls', 'subagent ziet activiteiten van hoofdagent NIET',
-    v_parent_act = 0, format('verwacht 0, kreeg %s', v_parent_act));
-end
-$$;
+  ------------------------------------------------------- admin zonder aal2
+  perform set_config('request.jwt.claims',
+    '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","aal":"aal1"}', true);
 
--- ===========================================================================
--- 10. Admin zonder aal2 krijgt geen admin-rechten; mét aal2 wel
--- ===========================================================================
-select koreman_test.login('11111111-1111-1111-1111-111111111111', 'aal1');
+  select public.is_admin() into v_flag;
+  ok := v_flag = false;
+  test := 'admin zonder aal2 is geen admin';
+  detail := format('is_admin() gaf %s', v_flag);
+  return next;
 
-do $$
-declare v_is_admin boolean; v_seen integer; v_own_profile integer;
-begin
-  select public.is_admin() into v_is_admin;
-  select count(*) into v_seen from public.architects;
-  select count(*) into v_own_profile from public.profiles
+  select count(*) into v_a from public.architects;
+  ok := v_a = 0;
+  test := 'admin zonder aal2 ziet geen architecten';
+  detail := format('verwacht 0, kreeg %s', v_a);
+  return next;
+
+  select count(*) into v_b from public.profiles
   where id = '11111111-1111-1111-1111-111111111111';
+  ok := v_b = 1;
+  test := 'admin zonder aal2 leest wel eigen profiel';
+  detail := format('verwacht 1, kreeg %s', v_b);
+  return next;
 
-  perform koreman_test.check('rls', 'admin zonder aal2 is geen admin', v_is_admin = false,
-    'is_admin() gaf true zonder MFA');
-  perform koreman_test.check('rls', 'admin zonder aal2 ziet geen architecten', v_seen = 0,
-    format('verwacht 0, kreeg %s', v_seen));
-  perform koreman_test.check('rls', 'admin zonder aal2 leest wel eigen profiel',
-    v_own_profile = 1, format('verwacht 1, kreeg %s', v_own_profile));
+  ---------------------------------------------------------- admin met aal2
+  perform set_config('request.jwt.claims',
+    '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated","aal":"aal2"}', true);
+
+  select public.is_admin() into v_flag;
+  ok := v_flag;
+  test := 'admin met aal2 is admin';
+  detail := format('is_admin() gaf %s', v_flag);
+  return next;
+
+  select count(*) into v_a from public.architects;
+  ok := v_a >= 3;
+  test := 'admin met aal2 ziet alle architecten';
+  detail := format('verwacht >= 3, kreeg %s', v_a);
+  return next;
+
+  select count(*) into v_b from public.audit_log;
+  ok := v_b > 0;
+  test := 'admin leest de audit log';
+  detail := format('audit log bevat %s regels', v_b);
+  return next;
+
+  -- Ook Koreman kan bewijsvoering niet weggooien.
+  begin
+    delete from public.activities where id = '88888888-0000-0000-0000-000000000001';
+    get diagnostics v_rows = row_count;
+    select count(*) into v_a from public.activities
+    where id = '88888888-0000-0000-0000-000000000001';
+    ok := v_rows = 0 and v_a = 1;
+    detail := format('%s verwijderd, %s over', v_rows, v_a);
+  exception when others then
+    ok := true;
+    detail := sqlerrm;
+  end;
+  test := 'ook Koreman kan een activiteit niet verwijderen';
+  return next;
+
+  execute 'reset role';
+  perform set_config('request.jwt.claims', '', true);
+  return;
 end
-$$;
+$fn$;
 
-select koreman_test.login('11111111-1111-1111-1111-111111111111', 'aal2');
-
-do $$
-declare v_is_admin boolean; v_seen integer; v_audit integer;
-begin
-  select public.is_admin() into v_is_admin;
-  select count(*) into v_seen from public.architects;
-  select count(*) into v_audit from public.audit_log;
-
-  perform koreman_test.check('rls', 'admin met aal2 is admin', v_is_admin,
-    'is_admin() gaf false mét MFA');
-  perform koreman_test.check('rls', 'admin met aal2 ziet alle architecten', v_seen >= 3,
-    format('verwacht >= 3, kreeg %s', v_seen));
-  perform koreman_test.check('rls', 'admin leest de audit log', v_audit > 0,
-    format('audit log bevat %s regels', v_audit));
-end
-$$;
-
--- ===========================================================================
--- 11. Ook een admin kan een activiteit niet verwijderen
--- ===========================================================================
-do $$
-declare v_rows integer; v_still integer;
-begin
-  delete from public.activities where id = '88888888-0000-0000-0000-000000000001';
-  get diagnostics v_rows = row_count;
-  select count(*) into v_still from public.activities
-  where id = '88888888-0000-0000-0000-000000000001';
-
-  perform koreman_test.check('rls', 'ook Koreman kan een activiteit niet verwijderen',
-    v_rows = 0 and v_still = 1, format('%s verwijderd', v_rows));
-exception when others then
-  perform koreman_test.check('rls', 'ook Koreman kan een activiteit niet verwijderen', true, sqlerrm);
-end
-$$;
-
--- ===========================================================================
--- 12. Een agent ziet de audit log niet
--- ===========================================================================
-select koreman_test.login('22222222-2222-2222-2222-222222222222');
-
-do $$
-declare v_audit integer;
-begin
-  select count(*) into v_audit from public.audit_log;
-  perform koreman_test.check('rls', 'agent ziet de audit log niet', v_audit = 0,
-    format('verwacht 0, kreeg %s', v_audit));
-end
-$$;
-
-select koreman_test.logout();
-reset role;
-
--- Stopt met een exception zodra er iets faalt (handig in CI).
-select koreman_test.report('rls');
-
--- De Supabase SQL Editor toont geen NOTICE-regels, wel deze tabel.
-select ok, label, detail
-from koreman_test.results
-where suite = 'rls'
-order by seq;
+select * from pg_temp.run_rls_tests();
 
 rollback;

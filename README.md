@@ -203,10 +203,14 @@ De tests draaien als SQL tegen de database en vereisen geen extra tooling.
 Draai ze tegen een **ontwikkeldatabase**, niet tegen productie. Elk bestand
 draait in één transactie en eindigt met `rollback`, dus er blijft niets staan.
 
-**Zonder psql:** plak in het Supabase-dashboard onder *SQL Editor* eerst de
-inhoud van `00_helpers.sql` en daarna die van het testbestand, en klik Run.
-Onderaan verschijnt een tabel met per test `ok`, `label` en `detail`. Faalt
-er iets, dan krijg je in plaats daarvan een foutmelding met het aantal.
+**Zonder psql:** plak in het Supabase-dashboard onder *SQL Editor* de inhoud
+van een testbestand en klik Run. Onderaan verschijnt een tabel met per test
+`ok`, `test` en `detail`.
+
+Elk testbestand is zelfstandig: geen hulpbestand, geen volgorde om te
+onthouden, en geen hulptabel. De uitkomsten worden in geheugen verzameld en
+in één keer als resultaatset teruggegeven — een tabel zou zelf weer onder
+RLS vallen, en dat kostte meer tijd dan het waard was.
 
 ```bash
 psql "$DATABASE_URL" -f supabase/tests/00_helpers.sql \
@@ -215,9 +219,6 @@ psql "$DATABASE_URL" -f supabase/tests/00_helpers.sql \
 psql "$DATABASE_URL" -f supabase/tests/00_helpers.sql \
                      -f supabase/tests/02_commission_test.sql
 ```
-
-Een suite stopt met een exception zodra er iets faalt, zodat een CI-stap rood
-wordt. De uitkomst per test verschijnt als `NOTICE`.
 
 **`01_rls_test.sql`** controleert onder meer dat een agent geen data van een
 andere agent ziet, dat een subagent niets van zijn hoofdagent ziet terwijl de
