@@ -18,6 +18,11 @@ create table if not exists koreman_test.results (
   detail text
 );
 
+-- Supabase zet RLS aan op nieuwe tabellen. Op deze testtabel is dat alleen
+-- maar lastig: koreman_test.check() draait tijdens een test als de rol
+-- authenticated en kon zo zijn eigen uitslag niet wegschrijven.
+alter table koreman_test.results disable row level security;
+
 -- Legt één uitkomst vast in plaats van de transactie af te breken, zodat één
 -- fout niet de rest van de suite verbergt.
 create or replace function koreman_test.check(
@@ -28,6 +33,8 @@ create or replace function koreman_test.check(
 )
 returns void
 language plpgsql
+security definer
+set search_path = koreman_test, public
 as $$
 begin
   insert into koreman_test.results (suite, label, ok, detail)
@@ -43,6 +50,8 @@ create or replace function koreman_test.login(
 )
 returns void
 language plpgsql
+security definer
+set search_path = koreman_test, public
 as $$
 begin
   perform set_config(
@@ -56,6 +65,8 @@ $$;
 create or replace function koreman_test.logout()
 returns void
 language plpgsql
+security definer
+set search_path = koreman_test, public
 as $$
 begin
   perform set_config('request.jwt.claims', '', true);
@@ -67,6 +78,8 @@ $$;
 create or replace function koreman_test.report(p_suite text)
 returns void
 language plpgsql
+security definer
+set search_path = koreman_test, public
 as $$
 declare
   r record;
