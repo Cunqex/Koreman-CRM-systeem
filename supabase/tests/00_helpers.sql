@@ -95,3 +95,16 @@ begin
   end if;
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- Rechten
+--
+-- De tests schakelen met "set local role authenticated" naar de rol van een
+-- agent, want alleen dan gelden de RLS-policies. In die rol moeten de
+-- hulpfuncties en de resultatentabel wel bereikbaar blijven; zonder deze
+-- grants loopt de eerste koreman_test.login() stuk op "permission denied".
+-- ---------------------------------------------------------------------------
+grant usage on schema koreman_test to authenticated, anon;
+grant all on all tables in schema koreman_test to authenticated, anon;
+grant all on all sequences in schema koreman_test to authenticated, anon;
+grant execute on all functions in schema koreman_test to authenticated, anon;

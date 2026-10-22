@@ -199,9 +199,16 @@ $$;
 -- ===========================================================================
 -- 7. Uitgesloten architect en ingetrokken claim leveren niets op
 -- ===========================================================================
+-- Uitsluiten van commissie is een Koreman-veld; fn_architects_guard laat dit
+-- alleen door als is_admin() waar is. In de SQL Editor zit daar geen JWT
+-- achter, dus zetten we die claims hier expliciet.
+select koreman_test.login('11111111-1111-1111-1111-111111111111', 'aal2');
+
 update public.architects
 set excluded_from_commission = true, exclusion_reason = 'Was al klant vóór het contract'
 where id = '55555555-0000-0000-0000-000000000001';
+
+select koreman_test.logout();
 
 select koreman_test.make_order(
   'b0000000-0000-0000-0000-000000000007',
@@ -219,9 +226,13 @@ begin
 end
 $$;
 
+select koreman_test.login('11111111-1111-1111-1111-111111111111', 'aal2');
+
 update public.architects
 set excluded_from_commission = false, exclusion_reason = null
 where id = '55555555-0000-0000-0000-000000000001';
+
+select koreman_test.logout();
 
 -- ===========================================================================
 -- 8. Subagent: hoofdagent krijgt 12,5% (1.250), subagent 9% (900)
