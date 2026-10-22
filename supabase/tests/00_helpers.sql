@@ -23,6 +23,11 @@ create table if not exists koreman_test.results (
 -- authenticated en kon zo zijn eigen uitslag niet wegschrijven.
 alter table koreman_test.results disable row level security;
 
+-- En een toegevende policy voor het geval RLS toch aan blijft staan.
+drop policy if exists results_open on koreman_test.results;
+create policy results_open on koreman_test.results
+  for all using (true) with check (true);
+
 -- Legt één uitkomst vast in plaats van de transactie af te breken, zodat één
 -- fout niet de rest van de suite verbergt.
 create or replace function koreman_test.check(

@@ -4,6 +4,28 @@
 -- Uitgangspunt in alle scenario's: adviesprijs 10.000 excl. btw,
 -- eigen percentage 12,5%, overgedragen 5%, doorgeefpercentage subagent 9%.
 
+-- Vangnet voor de resultatentabel.
+--
+-- Supabase zet RLS aan op nieuwe tabellen, ook op koreman_test.results, en
+-- laat dat niet zomaar uitzetten. Tijdens een test draait koreman_test.check()
+-- als de rol authenticated en loopt dan stuk op die policy. Een toegevende
+-- policy lost het op, ongeacht of RLS aan of uit staat. Dit raakt alleen de
+-- testtabel; de policies op de echte tabellen blijven ongemoeid.
+--
+-- Staat hier en niet alleen in 00_helpers.sql, zodat dit bestand ook werkt
+-- als de helpers van een oudere versie zijn.
+do $guard$
+begin
+  begin
+    execute 'alter table koreman_test.results disable row level security';
+  exception when others then
+    null;
+  end;
+  execute 'drop policy if exists results_open on koreman_test.results';
+  execute 'create policy results_open on koreman_test.results for all using (true) with check (true)';
+end
+$guard$;
+
 begin;
 
 delete from koreman_test.results where suite = 'commissie';
